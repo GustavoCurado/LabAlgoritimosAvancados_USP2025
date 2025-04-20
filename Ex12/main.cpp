@@ -1,3 +1,10 @@
+/*
+ * Nome: Gustavo Curado Ribeiro 
+ * NUSP: 14576732
+ * SCC0210 - Laboratório de Algoritmos Avançados I
+ * Exercício 12: Ajuda para Separar LEGOs
+*/
+
 #include <iostream>
 #include <vector>
 #include <climits>
