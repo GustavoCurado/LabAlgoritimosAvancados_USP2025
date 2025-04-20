@@ -6,18 +6,15 @@
 */
 
 #include <iostream>
-#include <cstdint>
 #include <climits>
 #include <algorithm>
 #include <vector>
 #include <utility>
+#include <queue>
 #include <map>
 
-bool ainda_tem_sujeira(uint16_t sujeiras_limpadas, int n_sujeiras);
-void limpa_sujeira(uint16_t& sujeiras_limpadas, int posicao_sujeira);
+void bfs(std::pair<int,int> dimensoes, std::pair<int,int> pos_inicial, std::map<std::pair<int, int>, std::map<std::pair<int, int>, int>> matriz_distancias);
 std::pair<int,int> muda_posicao(std::pair<int,int> dimensoes, std::pair<int,int> posicao, int direcao, bool& direcao_eh_valida);
-bool sujeira_posicao_atual(std::pair<int,int> posicao, const std::vector<std::pair<int,int>>& coord_sujeiras, uint16_t sujeiras_limpadas, int& posicao_sujeira);
-int achar_menor_caminho(std::pair<int,int> dimensoes, std::pair<int,int> posicao, uint16_t sujeiras_limpadas, const std::vector<std::pair<int,int>>& coord_sujeiras, std::map<std::pair<std::pair<int,int>, uint16_t>, int>& custos_caminhos);
 
 int main()
 {
@@ -47,16 +44,19 @@ int main()
 			coord_sujeiras.push_back(std::make_pair(x_sujeira, y_sujeira));
 		}
 
-		//Mapa que relaciona um cenário possível do problema, definido pelo par de coordenadas
-		//da posição do robô e um uint16_t em que cada bit representa se uma sujeira já foi limpada
-		//(1) ou não (0), com um custo mínimo inteiro do menor caminho que se pode atingir
-		std::map<std::pair<std::pair<int,int>, uint16_t>, int> custos_caminhos;
+		//Dado dois pontos determinados por seus pares de coordenadas, armazena a distância mínima entre eles
+		std::map<std::pair<int, int>, std::map<std::pair<int, int>, int>> matriz_distancias;
 
-		std::pair<int,int> dimensoes_sala(l, h);
-		std::pair<int,int> posicao(xo, yo);
-		uint16_t sujeiras_limpadas = 0; //Para uma sujeira na posição n do coord_sujeiras, o bit na posição n dessa variável estará 1 quando a sujeira indicada estiver limpa
+		for (int i = 1; i <= h; i++)
+		{
+			for (int j = 1; j <= l; j++)
+			{
+				bfs(std::make_pair(xo,yo), std::make_pair(xo,yo), matriz_distancias);
+			}
+		}
 
-		int solucao = achar_menor_caminho(dimensoes_sala, posicao, sujeiras_limpadas, coord_sujeiras, custos_caminhos);
+		solucao = tsp();
+
 
 		std::cout << "A menor rota tem tamanho " << solucao << ".\n";
 	}
@@ -65,87 +65,37 @@ int main()
 }
 
 
-int achar_menor_caminho(std::pair<int,int> dimensoes, std::pair<int,int> posicao, uint16_t sujeiras_limpadas, const std::vector<std::pair<int,int>>& coord_sujeiras, std::map<std::pair<std::pair<int,int>, uint16_t>, int>& custos_caminhos)
+void bfs(std::pair<int,int> dimensoes, std::pair<int,int> pos_inicial, std::map<std::pair<int, int>, std::map<std::pair<int, int>, int>> matriz_distancias)
 {
-	int posicao_sujeira; //Se houver uma sujeira na posição atual, indicará em qual índice de coord_sujeiras está essa sujeira;
+	queue<pair<int, int>> fila;
+	map<pair<int, int>, int> distancias;
 
-	//Se houver um monte de sujeira na posição atual do robô, limpa-o
-	if (sujeira_posicao_atual(posicao, coord_sujeiras, sujeiras_limpadas, posicao_sujeira))
-		limpa_sujeira(sujeiras_limpadas, posicao_sujeira);
-
-	std::pair<std::pair<int,int>, uint16_t> situacao_atual(posicao, sujeiras_limpadas);
-
-	//Se um custo mínimo não estiver armazenado em custos_caminhos, calcula recursivamente esse custo
-	if (custos_caminhos.find(situacao_atual) == custos_caminhos.end())
+	fila.push(pos_inicial);
+	
+	while (!fila.empty())
 	{
-		//Inicialização de variável
-		int menor_custo = INT_MAX;
+		sts::pair<int,int> pos_atual = fila.front();
+		fila.pop();
 
-		if (ainda_tem_sujeira(sujeiras_limpadas, coord_sujeiras.size()))
+		for (int direcao = 0; direcao < 4; direcao++)
 		{
-			for (int direcao = 0; direcao < 4; direcao++)
+			int pos_vizinha = muda_posicao(dimensoes, pos_atual, direcao, direcao_eh_valida);
+
+			if (!direcao_eh_valida)
+				continue;
+
+			if (distancias.find(pos_vizinha) == distancias.end())
 			{
-				bool direcao_eh_valida; 
-				std::pair<int,int> nova_posicao = muda_posicao(dimensoes, posicao, direcao, direcao_eh_valida);
-
-				if (!direcao_eh_valida)
-					continue;
-
-				int custo = 1 + achar_menor_caminho(dimensoes, nova_posicao, sujeiras_limpadas, coord_sujeiras, custos_caminhos);
-
-				if (custo < menor_custo)
-					menor_custo = custo;
+				distancias[pos_vizinha] = distancias[pos_atual] + 1;
+				fila.push(pos_vizinha);
 			}
 		}
-		else
-		{
-			menor_custo = 0;
-		}
-
-		custos_caminhos[situacao_atual] = menor_custo;
 	}
 
-	return custos_caminhos[situacao_atual];
+	matriz_distancias[pos_inicial] = distancias;
 }
 
 
-//Checa se ainda há um monte de sujeira que não foi limpado pelo robô
-bool ainda_tem_sujeira(uint16_t sujeiras_limpadas, int n_sujeiras)
-{
-	uint16_t mascara = (1 << n_sujeiras) - 1;
-
-	return (sujeiras_limpadas & mascara) != mascara;
-}
-
-
-//Checa se, na posição atual do robô, tem alguma sujeira para ser limpada, e atribui a "indice_sujeira" o valor da posição da sujeira em coord_sujeiras, se essa sujeira existir
-bool sujeira_posicao_atual(std::pair<int,int> posicao, const std::vector<std::pair<int,int>>& coord_sujeiras, uint16_t sujeiras_limpadas, int& indice_sujeira)
-{
-	//Inicialização de variável
-	bool tem_sujeira = false;
-
-	auto it = std::find(coord_sujeiras.begin(), coord_sujeiras.end(), posicao); 
-
-	if (it != coord_sujeiras.end())
-	{
-		indice_sujeira = std::distance(coord_sujeiras.begin(), it);
-
-		uint16_t mascara = 1 << indice_sujeira;
-		tem_sujeira = (sujeiras_limpadas & mascara) != mascara;
-	}
-
-	return tem_sujeira;
-}
-
-
-//Modifica o "posicao_sujeira"-ésimo bit de sujeiras_limpadas para indicar que o monte de sujeira nessa posição foi limpo
-void limpa_sujeira(uint16_t& sujeiras_limpadas, int posicao_sujeira)
-{
-	sujeiras_limpadas |= (1 << posicao_sujeira);
-}
-
-
-//Muda o valor da posição do robô dada a direção passada se, dada as dimensões da sala, isso for possível 
 std::pair<int,int> muda_posicao(std::pair<int,int> dimensoes, std::pair<int,int> posicao, int direcao, bool& direcao_eh_valida)
 {
 	std::pair<int,int> nova_posicao = posicao;
@@ -182,4 +132,46 @@ std::pair<int,int> muda_posicao(std::pair<int,int> dimensoes, std::pair<int,int>
 	}
 
 	return nova_posicao;
+}
+
+
+int tsp(std::pair<int,int> pos_inicial, std::vector<std::pair<int, int>> coord_sujeiras, std::map<std::pair<int, int>, std::map<std::pair<int, int>, int>> matriz_distancias)
+{
+	int n_sujeiras = coord_sujeiras.size()
+
+	int visitados = 0; //Máscara que indica quais sujeiras foram limpas (bit 0 se não, bit 1 se sim)
+	std::vector<std::vector<int>> dp(1 << n, std::vector(n_sujeiras, INT_MAX)); //dp[mascara][i_sujeira] = custo mínimo para percorrer todas as sujeiras marcadas pela máscara e parar em i_sujeira
+
+	for (int i = 0; i < n_sujeiras; i++)
+	{
+		dp[1 << i][i] = matriz_distancias[pos_inicial][coord_sujeiras[i]];
+	}
+
+	for (int mascara = 0; mascara < (1 << n_sujeira); mascara++)
+	{
+		for (int i1 = 0; i1 < n_sujeira; i1++)
+		{
+			if (!(mascara & (1 << i1)))
+				continue;
+
+			for (int i2 = 0; i2 < n_sujeira; i2++)
+			{
+				if (mascara & (1 << i2))
+					continue;
+
+				int nova_mascara = mascara | (1 << i2); //Marca a sujeira i2 como limpa
+				int nova_distancia = dp[mascara][i1] + matriz_distancias[coord_sujeiras[i1]][coord_sujeiras[i2]]; //Soma da distância percorrida até i1 com a distância entre i1 e i2
+
+				dp[nova_mascara][i2] = min(dp[nova_mascara][i2], nova_distancia);
+			}
+		}
+	}
+
+	int solucao = INT_MAX;
+	for (int i = 0; i < n_sujeiras; i++) 
+	{
+        	solucao = min(solucao, dp[(1 << n) - 1][i]);
+    	}
+
+	return solucao;
 }
