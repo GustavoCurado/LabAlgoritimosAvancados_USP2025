@@ -16,6 +16,8 @@
 
 
 void distancia_ate_ponto(std::pair<int,int> dimensoes, std::pair<int,int> pos_inicial, std::map<std::pair<int, int>, std::map<std::pair<int, int>, int>>& matriz_distancias);
+//void bfs(std::pair<int,int> dimensoes, std::pair<int,int> pos_inicial, std::map<std::pair<int, int>, std::map<std::pair<int, int>, int>>& matriz_distancias);
+//std::pair<int,int> muda_posicao(std::pair<int,int> dimensoes, std::pair<int,int> posicao, int direcao, bool& direcao_eh_valida);
 int tsp(std::pair<int,int> pos_inicial, std::vector<std::pair<int, int>> coord_sujeiras, std::map<std::pair<int, int>, std::map<std::pair<int, int>, int>> matriz_distancias);
 
 int main()
@@ -49,6 +51,8 @@ int main()
 		//Dado dois pontos determinados por seus pares de coordenadas, armazena a distância mínima entre eles
 		std::map<std::pair<int, int>, std::map<std::pair<int, int>, int>> matriz_distancias;
 
+		//std::cout << "z="<<z<<": "<<l<<" "<<h<<std::endl;
+
 		for (int i = 1; i <= h; i++)
 		{
 			for (int j = 1; j <= l; j++)
@@ -61,6 +65,7 @@ int main()
 				{
 					max_x = std::max(max_x, coord_sujeiras[it].first);
 					max_y = std::max(max_y, coord_sujeiras[it].second);
+					//if (z==5 && it==6) std::cout << "max_x=" << max_x << ", max_y==" << max_y << std::endl;
 				}
 
 				distancia_ate_ponto(std::make_pair(max_x,max_y), std::make_pair(j,i), matriz_distancias);
@@ -95,6 +100,76 @@ void distancia_ate_ponto(std::pair<int,int> dimensoes, std::pair<int,int> pos_in
 	}
 }
 
+/*void bfs(std::pair<int,int> dimensoes, std::pair<int,int> pos_inicial, std::map<std::pair<int, int>, std::map<std::pair<int, int>, int>>& matriz_distancias)
+{
+	std::queue<std::pair<int, int>> fila;
+	std::map<std::pair<int, int>, int> distancias;
+
+	fila.push(pos_inicial);
+	distancias[pos_inicial] = 0;
+	
+	while (!fila.empty())
+	{
+		std::pair<int,int> pos_atual = fila.front();
+		fila.pop();
+
+		for (int direcao = 0; direcao < 4; direcao++)
+		{
+			bool direcao_eh_valida;
+			std::pair<int,int> pos_vizinha = muda_posicao(dimensoes, pos_atual, direcao, direcao_eh_valida);
+
+			if (!direcao_eh_valida)
+				continue;
+
+			if (distancias.find(pos_vizinha) == distancias.end())
+			{
+				distancias[pos_vizinha] = distancias[pos_atual] + 1;
+				fila.push(pos_vizinha);
+			}
+		}
+	}
+
+	matriz_distancias[pos_inicial] = distancias;
+}*/
+
+
+/*std::pair<int,int> muda_posicao(std::pair<int,int> dimensoes, std::pair<int,int> posicao, int direcao, bool& direcao_eh_valida)
+{
+	std::pair<int,int> nova_posicao = posicao;
+	direcao_eh_valida = true;
+
+	switch(direcao)
+	{
+	case 0:
+		if (posicao.first < dimensoes.first)
+			++nova_posicao.first;
+		else
+			direcao_eh_valida = false;
+		break;
+	case 1:
+		if (posicao.second < dimensoes.second)
+			++nova_posicao.second;
+		else
+			direcao_eh_valida = false;
+		break;
+	case 2:
+		if (posicao.first > 1)
+			--nova_posicao.first;
+		else
+			direcao_eh_valida = false;
+		break;
+	case 3:
+		if (posicao.second > 1)
+			--nova_posicao.second;
+		else
+			direcao_eh_valida = false;
+		break;
+	default:
+		break;
+	}
+
+	return nova_posicao;
+}*/
 
 
 int tsp(std::pair<int,int> pos_inicial, std::vector<std::pair<int, int>> coord_sujeiras, std::map<std::pair<int, int>, std::map<std::pair<int, int>, int>> matriz_distancias)
@@ -126,6 +201,9 @@ int tsp(std::pair<int,int> pos_inicial, std::vector<std::pair<int, int>> coord_s
 
 				int nova_mascara = mascara | (1 << i2); //Marca a sujeira i2 como limpa
 				int nova_distancia = dp[mascara][i1] + matriz_distancias[coord_sujeiras[i1]][coord_sujeiras[i2]]; //Soma da distância percorrida até i1 com a distância entre i1 e i2
+
+				//std::cout << i1 << " -> " << i2 << " (máscara=" << nova_mascara << "); op1=" << dp[nova_mascara][i2] << " op2=" << nova_distancia << std::endl;
+				//std::cout << "dp[mascara][i1] = " << dp[mascara][i1] << "; matriz_ditancias[coord_sujeiras[i1]][coord_sujeiras[i2]] = " << matriz_distancias[coord_sujeiras[i1]][coord_sujeiras[i2]] << std::endl;
 
 				dp[nova_mascara][i2] = std::min(dp[nova_mascara][i2], nova_distancia);
 			}
