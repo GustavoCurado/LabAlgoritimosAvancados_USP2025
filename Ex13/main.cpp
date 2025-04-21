@@ -2,7 +2,7 @@
  * Nome: Gustavo Curado Ribeiro 
  * NUSP: 14576732
  * SCC0210 - Laboratório de Algoritmos Avançados I
- * Exercício 13: O Castd::minho Ótimo na República Suja
+ * Exercício 13: O Caminho Ótimo na República Suja
 */
 
 #include <iostream>
