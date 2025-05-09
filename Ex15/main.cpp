@@ -72,7 +72,7 @@ std::vector<int> crivo(int N)
 
 std::map<int, int> decomp_fatorial(int N)
 {
-	if (N == 1)
+	if (N == 0 || N == 1)
 	{
 		std::map<int,int> tabela_superflua;
 		tabela_superflua[2] = 0;
